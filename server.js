@@ -12,7 +12,7 @@ const scanRoutes = require('./routes/scanRoutes');
 const { errorHandler, notFoundHandler } = require('./middleware/errorHandler');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 10000;
 
 // Middleware
 app.use(cors({
@@ -86,16 +86,26 @@ async function startServer() {
     await sequelize.authenticate();
     console.log('✓ Database connected successfully');
     
-    // Sync database models
+    // Sync database models (safe for production)
     await sequelize.sync({ alter: true });
     console.log('✓ Database synchronized');
     
     // Start listening
-    app.listen(PORT, () => {
+    const server = app.listen(PORT, () => {
       console.log(`✓ Server running on port ${PORT}`);
-      console.log(`✓ Environment: ${process.env.NODE_ENV || 'development'}`);
+      console.log(`✓ Environment: ${process.env.NODE_ENV || 'production'}`);
+      console.log(`✓ Health check: http://localhost:${PORT}/health`);
       console.log(`✓ API Documentation: http://localhost:${PORT}/api`);
     });
+
+    // Graceful shutdown
+    process.on('SIGTERM', () => {
+      console.log('SIGTERM received. Shutting down gracefully...');
+      server.close(() => {
+        console.log('Process terminated');
+      });
+    });
+
   } catch (error) {
     console.error('✗ Unable to start server:', error);
     process.exit(1);

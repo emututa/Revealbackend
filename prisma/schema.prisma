@@ -1,21 +1,88 @@
-
-
-
 generator client {
-  provider = "prisma-client"
+  provider = "prisma-client-js"
   output   = "../generated/prisma"
 }
 
 datasource db {
   provider = "postgresql"
-  
+  url      = env("DATABASE_URL")
 }
 
-model Users {
+model User {
   id           Int       @id @default(autoincrement())
   name         String    @db.VarChar(255)
   email        String    @unique @db.VarChar(255)
   passwordHash String    @db.VarChar(255)
-  createdAt    DateTime? @default(now()) @db.Timestamp(6)
-  updatedAt    DateTime? @default(now()) @db.Timestamp(6)
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+  
+  // Relations
+  healthConditions HealthCondition[]
+  allergicFoods   AllergicFood[]
+  foodReactions   FoodReaction[]
+  foodScans       FoodScan[]
+  
+  @@map("Users")
+}
+
+model HealthCondition {
+  id             Int      @id @default(autoincrement())
+  userId         Int      @map("user_id")
+  conditionName  String   @map("condition_name") @db.VarChar(255)
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+  
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("HealthConditions")
+  @@index([userId])
+}
+
+model AllergicFood {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @map("user_id")
+  foodName  String   @map("food_name") @db.VarChar(255)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("AllergicFoods")
+  @@index([userId])
+}
+
+model FoodReaction {
+  id           Int      @id @default(autoincrement())
+  userId       Int      @map("user_id")
+  foodName     String   @map("food_name") @db.VarChar(255)
+  medicalNotes String?  @map("medical_notes") @db.Text
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+  
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("FoodReactions")
+  @@index([userId])
+}
+
+model FoodScan {
+  id              Int      @id @default(autoincrement())
+  userId          Int      @map("user_id")
+  foodName        String   @map("food_name") @db.VarChar(255)
+  ingredients     String   @db.Text
+  isSafe          Boolean  @map("is_safe") @default(true)
+  analysisResult  String?  @map("analysis_result") @db.Text
+  warnings        String?  @db.Text
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+  
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("FoodScans")
+  @@index([userId])
+  @@index([createdAt])
 }
